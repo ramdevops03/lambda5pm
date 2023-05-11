@@ -1,0 +1,52 @@
+To stop EC2 instances every day at 5 PM using a Lambda function, you can follow these steps:
+
+1. Create a new Lambda function:
+   - Go to the AWS Management Console and open the Lambda service.
+   - Click on "Create function" and choose the "Author from scratch" option.
+   - Provide a name for your function and select the runtime (e.g., Python 3.9).
+   - Choose an existing execution role or create a new one with the necessary permissions to stop EC2 instances.
+   - Click on "Create function" to create the Lambda function.
+
+2. Configure the trigger:
+   - In the Lambda function's configuration, scroll down to the "Designer" section.
+   - Click on "Add trigger" and select "CloudWatch Events" as the trigger type.
+   - Configure the CloudWatch Events rule to schedule the function to run at 5 PM every day. For example, you can use a cron expression like `cron(0 17 * * ? *)` to trigger the function at 5 PM UTC.
+
+3. Implement the Lambda function code:
+   - In the Lambda function's code editor, write the code to stop the EC2 instances. Here's an example using Python and Boto3, the AWS SDK for Python:
+
+```python
+import boto3
+
+def lambda_handler(event, context):
+    ec2 = boto3.client('ec2')
+    
+    # Filter the instances you want to stop (e.g., by tags, instance IDs, etc.)
+    filters = [
+        {'Name': 'tag:Environment', 'Values': ['production']}
+    ]
+    
+    # Get a list of running instances based on the filters
+    response = ec2.describe_instances(Filters=filters)
+    
+    # Extract the instance IDs from the response
+    instance_ids = []
+    for reservation in response['Reservations']:
+        for instance in reservation['Instances']:
+            instance_ids.append(instance['InstanceId'])
+    
+    # Stop the instances
+    if len(instance_ids) > 0:
+        ec2.stop_instances(InstanceIds=instance_ids)
+        print('EC2 instances stopped:', instance_ids)
+    else:
+        print('No running EC2 instances found.')
+```
+
+   - Modify the `filters` variable to define the criteria for selecting the instances you want to stop.
+
+4. Save and test the Lambda function:
+   - Click on "Save" to save the Lambda function code.
+   - You can test the function manually by clicking on the "Test" button and configuring a test event or by waiting for the scheduled trigger to execute the function.
+
+With these steps, you have set up a Lambda function that will be triggered by CloudWatch Events at 5 PM every day. It will stop the EC2 instances that match your specified filters. Make sure to adjust the filters according to your requirements.
